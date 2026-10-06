@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Camera, Search, Image as ImageIcon, ArrowRight, CheckCircle2, XCircle, Plus, X } from 'lucide-react';
 import api from '../api/client';
 
 export default function SearchPhotoPage() {
   const navigate = useNavigate();
+  const galleryInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState('');
   const [results, setResults] = useState([]);
@@ -82,20 +84,24 @@ export default function SearchPhotoPage() {
                   <p className="text-base font-semibold text-slate-800 sm:text-lg">Upload a product photo</p>
                   <p className="mt-1 text-sm text-slate-500">Search your saved designs for a match.</p>
                 </div>
-                <label className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white">
-                  <ImageIcon size={16} />
-                  Choose Photo
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="sr-only"
-                    onChange={(event) => {
-                      handleFile(event.target.files[0]);
-                      event.target.value = '';
-                    }}
-                  />
-                </label>
+                <div className="flex w-full flex-col justify-center gap-2 sm:w-auto sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => galleryInputRef.current?.click()}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white"
+                  >
+                    <ImageIcon size={16} />
+                    Choose from Gallery
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700"
+                  >
+                    <Camera size={16} />
+                    Take Photo
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
@@ -112,20 +118,22 @@ export default function SearchPhotoPage() {
                     <Search size={16} />
                     {loading ? 'Searching...' : 'Search Designs'}
                   </button>
-                  <label className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => galleryInputRef.current?.click()}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700"
+                  >
                     <ImageIcon size={16} />
-                    Change Photo
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      className="sr-only"
-                      onChange={(event) => {
-                        handleFile(event.target.files[0]);
-                        event.target.value = '';
-                      }}
-                    />
-                  </label>
+                    Gallery
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700"
+                  >
+                    <Camera size={16} />
+                    Camera
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
@@ -145,6 +153,28 @@ export default function SearchPhotoPage() {
               </div>
             )}
           </div>
+
+          <input
+            ref={galleryInputRef}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={(event) => {
+              handleFile(event.target.files[0]);
+              event.target.value = '';
+            }}
+          />
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="sr-only"
+            onChange={(event) => {
+              handleFile(event.target.files[0]);
+              event.target.value = '';
+            }}
+          />
 
           {message && (
             <div role="alert" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900">
