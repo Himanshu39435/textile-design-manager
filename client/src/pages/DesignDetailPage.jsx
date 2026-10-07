@@ -1,21 +1,68 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { Pencil, Trash2, Copy, Download } from 'lucide-react';
 import api from '../api/client';
 
 export default function DesignDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [design, setDesign] = useState(null);
+  const [message, setMessage] = useState('');
+  const [action, setAction] = useState('');
 
   useEffect(() => {
+    let active = true;
+
     async function load() {
-      const { data } = await api.get(`/designs/${id}`);
-      setDesign(data.data || null);
+      try {
+        const { data } = await api.get(`/designs/${id}`);
+        if (active) setDesign(data.data || null);
+      } catch (error) {
+        if (active) setMessage(error.response?.data?.message || 'Design could not be loaded. Please try again.');
+      }
     }
+
     load();
+    return () => {
+      active = false;
+    };
   }, [id]);
 
-  if (!design) return <div className="p-8 text-slate-500">Loading...</div>;
+  const copyDesignNumber = async () => {
+    try {
+      await navigator.clipboard.writeText(String(design.designNumber));
+      setMessage('Design number copied.');
+    } catch {
+      setMessage('Could not copy the design number. Check your browser clipboard permissions.');
+    }
+  };
+
+  const deleteDesign = async () => {
+    if (!window.confirm(`Delete design ${design.designNumber}? This cannot be undone.`)) return;
+
+    setAction('delete');
+    setMessage('');
+    try {
+      await api.delete(`/designs/${id}`);
+      navigate('/designs');
+    } catch (error) {
+      setMessage(error.response?.data?.message || 'Design could not be deleted. Please try again.');
+    } finally {
+      setAction('');
+    }
+  };
+
+  if (!design) {
+    return (
+      <div className="p-8 text-slate-500" role={message ? 'alert' : undefined}>
+        {message || 'Loading...'}
+      </div>
+    );
+  }
+
+  const downloadUrl = design.imageUrl.includes('/upload/')
+    ? design.imageUrl.replace('/upload/', '/upload/fl_attachment/')
+    : design.imageUrl;
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-5 p-4 sm:p-6 lg:space-y-8 lg:p-10 2xl:p-12">
@@ -33,10 +80,11 @@ export default function DesignDetailPage() {
 
           <div className="grid grid-cols-2 gap-2">
             <Link to={`/designs/${id}/edit`} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary-600 px-3 py-2 text-sm font-medium text-white"><Pencil size={16} /> Edit</Link>
-            <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 px-2 py-2 text-xs font-medium text-slate-700 sm:px-3 sm:text-sm"><Copy size={16} /> Copy Number</button>
-            <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 px-2 py-2 text-xs font-medium text-slate-700 sm:px-3 sm:text-sm"><Download size={16} /> Download</button>
-            <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700"><Trash2 size={16} /> Delete</button>
+            <button type="button" onClick={copyDesignNumber} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 px-2 py-2 text-xs font-medium text-slate-700 sm:px-3 sm:text-sm"><Copy size={16} /> Copy Number</button>
+            <a href={downloadUrl} download={`${design.designNumber}.jpg`} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 px-2 py-2 text-xs font-medium text-slate-700 sm:px-3 sm:text-sm"><Download size={16} /> Download</a>
+            <button type="button" onClick={deleteDesign} disabled={action === 'delete'} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 disabled:cursor-not-allowed disabled:opacity-60"><Trash2 size={16} /> {action === 'delete' ? 'Deleting...' : 'Delete'}</button>
           </div>
+          {message && <p role="status" className="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700">{message}</p>}
         </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-1 2xl:grid-cols-3">
